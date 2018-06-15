@@ -1,6 +1,6 @@
 var myMap = L.map("map", {
-    center: [37.09, -95.71],
-    zoom: 3
+    center: [0, 0],
+    zoom: 2
   });
 
 L.tileLayer(
@@ -20,27 +20,67 @@ d3.json(quakesUrl, function(data) {
     };
     
     var colormap = d3.scale.linear()
-        .domain([0, 3, 5])
-        .range(["yellow", "orange", "red"]);
+        .domain([0, 5])
+        .range(["yellow", "red"]);
     
-    L.geoJSON(data, {
+    var earthquakes = L.geoJSON(data, {
         pointToLayer: function (feature, latlng) {
             return L.circleMarker(latlng, {
                 radius: feature.properties.mag * 3,
                 fillColor: colormap(feature.properties.mag),
                 color: 'black',
                 fillOpacity: 1,
-                weight: 0.5
+                weight: 0.6
                 
             })
         },
         onEachFeature: onEachFeature
         
-        
-    }).addTo(myMap);
+    // })    
+    });
     
     
 
+    var legend = L.control({ position: "bottomright" });
+
+    legend.onAdd = function() {
+
+        var geojson = L.choropleth(data, {
+            valueProperty: "mag",
+            scale: ["yellow", "red"],
+            steps: 6,    
+        });
+        var div = L.DomUtil.create("div", "info legend");
+        var limits = geojson.options.limits;
+        var colors = geojson.options.colors;
+
+        // var legendInfo =
+        //  "<h4>Magnitude</h4>" +
+            // "<div class=\"labels\">" +
+            // "<div class=\"min\">" + limits[0] + "</div>" +
+            // "<div class=\"max\">" + limits[limits.length - 1] + "</div>" +
+            // "</div>";
+        var magnitudes = ['0-1', '1-2', '2-3', '3-4', '4-5', '5+']
+
+        var labelsColors = limits.map((lim, ind) => {
+            return ('<li style="background-color: ' + colors[ind] + '"></li>')
+        })
+        var labelsLabels = limits.map((lim, ind) => {
+            return ('<li>'+ magnitudes[ind]+ '</li>')
+        })
+
+        // div.innerHTML = legendInfo;
+        // limits.forEach(function(limit, index) {
+        //     labels.push('<li style="background-color: ' + colors[index] + '">'+ magnitudes[index]+ '</li>');
+        //   });
+        
+        div.innerHTML += "<ul>" + labelsColors.join("") + "</ul>" + "<ul>" + labelsLabels.join("") + "</ul>";
+        return div;
+    }
+
+
+    legend.addTo(myMap);
+    earthquakes.addTo(myMap);
 
 
     
