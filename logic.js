@@ -1,21 +1,28 @@
 // var access_token = token;
 
-function renderMap(quakes, legend) {
+function renderMap(quakes, legend, plates) {
+// function renderMap(getQuakes) {
 
     var satellTiles = L.tileLayer(
-        "https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/256/{z}/{x}/{y}?" +
+        "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v10/tiles/256/{z}/{x}/{y}?" +
           "access_token=" + token);
     
     var regTiles = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/outdoors-v10/tiles/256/{z}/{x}/{y}?' +
     "access_token=" + token);
 
+    var ligthTiles = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/light-v9/tiles/256/{z}/{x}/{y}?' +
+    "access_token=" + token)
+
     var baseMaps = { 
         "Satellite": satellTiles,
-        "Street": regTiles
+        "Street": regTiles,
+        'Greyscale': ligthTiles
     };
     
+
     var overLay = { 
         'Quakes': quakes,
+        'Plates': plates
     };
 
     var myMap = L.map("map", {
@@ -45,8 +52,9 @@ function renderMap(quakes, legend) {
 };
 
 
+var platesUrl = 'https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json';
+var quakesUrl = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson';
 
-var quakesUrl = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson';
 
 d3.json(quakesUrl, function(data) {
     console.log(data.features);
@@ -60,7 +68,7 @@ d3.json(quakesUrl, function(data) {
         .domain([0, 5])
         .range(["yellow", "red"]);
     
-    var earthquakes = L.geoJSON(data, {
+    quakesData = L.geoJSON(data, {
 
         pointToLayer: function (feature, latlng) {
             return L.circleMarker(latlng, {
@@ -77,12 +85,10 @@ d3.json(quakesUrl, function(data) {
         
     // })    
     });
-    
-    
 
-    var legendQuakes = L.control({ position: "bottomright" });
+    quakesLegend = L.control({ position: "bottomright" });
 
-    legendQuakes.onAdd = function() {
+    quakesLegend.onAdd = function() {
 
         var geojson = L.choropleth(data, {
             valueProperty: "mag",
@@ -106,11 +112,29 @@ d3.json(quakesUrl, function(data) {
     }
 
 
-    // legend.addTo(myMap);
-    // earthquakes.addTo(myMap);
+    // quakesLegend.addTo(myMap);
+    // quakesData.addTo(myMap);
+    getPlates(quakesData, quakesLegend);
+    // renderMap(quakesData, quakesLegend)
+    
+    
+    });
+    
+    // return quakesData, quakesLegend
+// }
 
-    renderMap(earthquakes, legendQuakes)
-    
-    
-    
-})
+function getPlates(q,l) {
+
+    d3.json(platesUrl, function(data) {
+      var plates = L.geoJSON(data, {
+        style: function (feature) {
+          return {
+            color: 'orange',
+            weight: 1,
+            fillColor: 'none'
+          };
+      }
+      });
+      renderMap(q, l, plates);
+    });
+  }
