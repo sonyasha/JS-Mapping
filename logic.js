@@ -20,17 +20,17 @@ d3.json(quakesUrl, function(data) {
     };
     
     var colormap = d3.scale.linear()
-            .domain([0, 3, 7])
-            .range(["blue", "orange", "red"]);
+        .domain([0, 3, 5])
+        .range(["yellow", "orange", "red"]);
     
     L.geoJSON(data, {
         pointToLayer: function (feature, latlng) {
             return L.circleMarker(latlng, {
-                radius: feature.properties.mag * 4,
+                radius: feature.properties.mag * 3,
                 fillColor: colormap(feature.properties.mag),
-                // color: "white",
+                color: 'black',
                 fillOpacity: 1,
-                opacity: 0.5
+                weight: 0.5
                 
             })
         },
