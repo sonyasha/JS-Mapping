@@ -1,15 +1,52 @@
-var myMap = L.map("map", {
-    center: [0, 0],
-    zoom: 2
-  });
+// var access_token = token;
 
-L.tileLayer(
-    "https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/256/{z}/{x}/{y}?" +
-      "access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NDg1bDA1cjYzM280NHJ5NzlvNDMifQ.d6e-nNyBDtmQCVwVNivz7A"
-  ).addTo(myMap);
+function renderMap(quakes, legend) {
+
+    var satellTiles = L.tileLayer(
+        "https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/256/{z}/{x}/{y}?" +
+          "access_token=" + token);
+    
+    var regTiles = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/outdoors-v10/tiles/256/{z}/{x}/{y}?' +
+    "access_token=" + token);
+
+    var baseMaps = { 
+        "Satellite": satellTiles,
+        "Street": regTiles
+    };
+    
+    var overLay = { 
+        'Quakes': quakes,
+    };
+
+    var myMap = L.map("map", {
+        center: [0, 0],
+        zoom: 2,
+        layers: [satellTiles, quakes]
+      });
+
+    L.control.layers(baseMaps, overLay, {
+        // collapsed: false
+      }).addTo(myMap);
+    
+    legend.addTo(myMap);
+
+    myMap.on('overlayadd', function(eventLayer){
+        if (eventLayer.name === 'Quakes'){
+            myMap.addControl(legend);
+        } 
+    });
+    
+    myMap.on('overlayremove', function(eventLayer){
+        if (eventLayer.name === 'Quakes'){
+            myMap.removeControl(legend);
+        } 
+    });
+    
+};
+
+
 
 var quakesUrl = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson';
-
 
 d3.json(quakesUrl, function(data) {
     console.log(data.features);
@@ -24,8 +61,10 @@ d3.json(quakesUrl, function(data) {
         .range(["yellow", "red"]);
     
     var earthquakes = L.geoJSON(data, {
+
         pointToLayer: function (feature, latlng) {
             return L.circleMarker(latlng, {
+
                 radius: feature.properties.mag * 3,
                 fillColor: colormap(feature.properties.mag),
                 color: 'black',
@@ -41,48 +80,36 @@ d3.json(quakesUrl, function(data) {
     
     
 
-    var legend = L.control({ position: "bottomright" });
+    var legendQuakes = L.control({ position: "bottomright" });
 
-    legend.onAdd = function() {
+    legendQuakes.onAdd = function() {
 
         var geojson = L.choropleth(data, {
             valueProperty: "mag",
             scale: ["yellow", "red"],
             steps: 6,    
         });
-        var div = L.DomUtil.create("div", "info legend");
-        var limits = geojson.options.limits;
-        var colors = geojson.options.colors;
 
-        // var legendInfo =
-        //  "<h4>Magnitude</h4>" +
-            // "<div class=\"labels\">" +
-            // "<div class=\"min\">" + limits[0] + "</div>" +
-            // "<div class=\"max\">" + limits[limits.length - 1] + "</div>" +
-            // "</div>";
+        var div = L.DomUtil.create("div", "info legend");
+
         var magnitudes = ['0-1', '1-2', '2-3', '3-4', '4-5', '5+']
 
-        var labelsColors = limits.map((lim, ind) => {
-            return ('<li style="background-color: ' + colors[ind] + '"></li>')
+        var labelsColors = geojson.options.limits.map((lim, ind) => {
+            return ('<li style="background-color: ' + geojson.options.colors[ind] + '"></li>')
         })
-        var labelsLabels = limits.map((lim, ind) => {
+        var labelsLabels = geojson.options.limits.map((lim, ind) => {
             return ('<li>'+ magnitudes[ind]+ '</li>')
         })
-
-        // div.innerHTML = legendInfo;
-        // limits.forEach(function(limit, index) {
-        //     labels.push('<li style="background-color: ' + colors[index] + '">'+ magnitudes[index]+ '</li>');
-        //   });
         
         div.innerHTML += "<ul>" + labelsColors.join("") + "</ul>" + "<ul>" + labelsLabels.join("") + "</ul>";
         return div;
     }
 
 
-    legend.addTo(myMap);
-    earthquakes.addTo(myMap);
+    // legend.addTo(myMap);
+    // earthquakes.addTo(myMap);
 
-
+    renderMap(earthquakes, legendQuakes)
     
     
     
