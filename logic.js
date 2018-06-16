@@ -1,9 +1,12 @@
 var quakesUrl = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson';
 var platesUrl = 'https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json';
+var volcanoesUrl = 'https://webservices.volcano.si.edu/geoserver/GVP-VOTW/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GVP-VOTW:E3WebApp_Emissions&maxFeatures=100&outputFormat=application%2Fjson'
 
-d3.json(quakesUrl, function(quakedata) {
-    getQuakes(quakedata);
-});
+// d3.json(quakesUrl, function(quakedata) {
+//     getQuakes(quakedata);
+// });
+
+d3.json(quakesUrl, getQuakes);
 
 function getQuakes(data) {        
 
@@ -18,18 +21,18 @@ function getQuakes(data) {
 
     var quakesData = L.geoJSON(data, {
 
-    pointToLayer: function (feature, latlng) {
-        return L.circleMarker(latlng, {
+        pointToLayer: function (feature, latlng) {
+            return L.circleMarker(latlng, {
 
-            radius: feature.properties.mag * 3,
-            fillColor: colormap(feature.properties.mag),
-            color: 'black',
-            fillOpacity: 1,
-            weight: 0.6
-            
-        })
-    },
-    onEachFeature: onEachFeature
+                radius: feature.properties.mag * 3,
+                fillColor: colormap(feature.properties.mag),
+                color: 'black',
+                fillOpacity: 1,
+                weight: 0.6
+                
+            })
+        },
+        onEachFeature: onEachFeature
     });
 
     //create quakes legend control
@@ -72,13 +75,36 @@ function getPlates(quakes,legend) {
             weight: 1,
             fillColor: 'none'
           };
-      }
+        }
       });
-      renderMap(quakes, legend, plates);
+    //   renderMap(quakes, legend, plates);
+    volcCluster(quakes, legend, plates);
     });
 };
 
-function renderMap(quakes, legend, plates) {
+function volcCluster(quakes, legend, plates) {
+    d3.json(volcanoesUrl, function(data) {
+  
+    var volcanoes = L.markerClusterGroup();
+  
+    var volcLayer = L.geoJson(data, {
+        onEachFeature: function (feature, layer) {
+            layer.bindPopup("<h3>" + feature.properties.VolcanoName +  "</h3><p>Explotion " + feature.properties.SO2_Kilotons + " KiloTons</p><hr><p>Start Date: "+
+            feature.properties.StartDate + "</p><hr><p>End date: " + feature.properties.EndDate + "</p>");
+        }
+    });
+      
+    volcanoes.addLayer(volcLayer);
+
+    renderMap(quakes, legend, plates, volcanoes);
+
+    //   myMap.addLayer(volcanoes);
+    // myMap.fitBounds(volcanoes.getBounds());
+    
+    });  
+}
+
+function renderMap(quakes, legend, plates, volcs) {
 
     var satellTiles = L.tileLayer(
         "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v10/tiles/256/{z}/{x}/{y}?" +
@@ -96,10 +122,10 @@ function renderMap(quakes, legend, plates) {
         'Greyscale': ligthTiles
     };
     
-
     var overLay = { 
         'Quakes': quakes,
-        'Plates': plates
+        'Plates': plates,
+        'Volcanoes': volcs
     };
 
     var myMap = L.map("map", {
@@ -118,16 +144,13 @@ function renderMap(quakes, legend, plates) {
         },
     });
 
-    
-
     L.control.layers(baseMaps, overLay, {
         collapsed: false
       }).addTo(myMap);
     
     legend.addTo(myMap);
     
-
-
+    //disappearing legend
     myMap.on('overlayadd', function(eventLayer){
         if (eventLayer.name === 'Quakes'){
             myMap.addControl(legend);
@@ -141,69 +164,6 @@ function renderMap(quakes, legend, plates) {
     });
     
 };
-
-
-
-
-    
-
-    
-
-    // function onEachFeature(feature, layer) { //add popups
-    //     layer.bindPopup("<h3>" + feature.properties.place +
-    //       "</h3><hr><p>" + new Date(feature.properties.time) + ', magnitude ' + feature.properties.mag + "</p>");
-    // };
-    
-    // var colormap = d3.scale.linear()
-    //     .domain([0, 5])
-    //     .range(["yellow", "red"]);
-    
-    // var quakesData = L.geoJSON(data, {
-
-    //     pointToLayer: function (feature, latlng) {
-    //         return L.circleMarker(latlng, {
-
-    //             radius: feature.properties.mag * 3,
-    //             fillColor: colormap(feature.properties.mag),
-    //             color: 'black',
-    //             fillOpacity: 1,
-    //             weight: 0.6
-                
-    //         })
-    //     },
-    //     onEachFeature: onEachFeature
-    // });
-
-    // var quakesLegend = L.control({ position: "bottomright" });
-
-    // quakesLegend.onAdd = function() {
-
-    //     var geojson = L.choropleth(data, {
-    //         valueProperty: "mag",
-    //         scale: ["yellow", "red"],
-    //         steps: 6,    
-    //     });
-
-    //     var div = L.DomUtil.create("div", "info legend");
-
-    //     var magnitudes = ['0-1', '1-2', '2-3', '3-4', '4-5', '5+']
-
-    //     var labelsColors = geojson.options.limits.map((lim, ind) => {
-    //         return ('<li style="background-color: ' + geojson.options.colors[ind] + '"></li>')
-    //     })
-    //     var labelsLabels = geojson.options.limits.map((lim, ind) => {
-    //         return ('<li>'+ magnitudes[ind]+ '</li>')
-    //     })
-        
-    //     div.innerHTML += "<ul>" + labelsColors.join("") + "</ul>" + "<ul>" + labelsLabels.join("") + "</ul>";
-    //     return div;
-    // };
-
-    // getPlates(quakesData, quakesLegend, tdWmsLayer);
-    // getPlates(quakesData, quakesLegend);
-    
-
-
 
 
 
