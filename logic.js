@@ -1,6 +1,8 @@
 var quakesUrl = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson';
 var platesUrl = 'https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json';
 var volcanoesUrl = 'https://webservices.volcano.si.edu/geoserver/GVP-VOTW/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GVP-VOTW:E3WebApp_Emissions&maxFeatures=100&outputFormat=application%2Fjson'
+var floodURL = 'https://waterwatch.usgs.gov/webservices/realtime?format=json';
+
 
 // d3.json(quakesUrl, function(quakedata) {
 //     getQuakes(quakedata);
@@ -78,11 +80,11 @@ function getPlates(quakes,legend) {
         }
       });
     //   renderMap(quakes, legend, plates);
-    volcCluster(quakes, legend, plates);
+    getVocanoes(quakes, legend, plates);
     });
 };
 
-function volcCluster(quakes, legend, plates) {
+function getVocanoes(quakes, legend, plates) {
     d3.json(volcanoesUrl, function(data) {
   
     var volcanoes = L.markerClusterGroup();
@@ -96,15 +98,31 @@ function volcCluster(quakes, legend, plates) {
       
     volcanoes.addLayer(volcLayer);
 
-    renderMap(quakes, legend, plates, volcanoes);
+    // renderMap(quakes, legend, plates, volcanoes);
 
     //   myMap.addLayer(volcanoes);
     // myMap.fitBounds(volcanoes.getBounds());
-    
+    getWater(quakes, legend, plates, volcanoes);
     });  
 }
 
-function renderMap(quakes, legend, plates, volcs) {
+function getWater(quakes, legend, plates, volcanoes) {
+    d3.json(floodURL, function(data) {
+      console.log(data.sites[0].dec_lat_va);
+      
+      var heatArray = data.sites.map(el => {
+        return [el.dec_lat_va, el.dec_long_va]
+      });
+      
+      var water = L.heatLayer(heatArray, {
+        radius: 50,
+        blur: 7
+      });
+      renderMap(quakes, legend, plates, volcanoes, water);
+    });
+  }
+
+function renderMap(quakes, legend, plates, volcs, water) {
 
     var satellTiles = L.tileLayer(
         "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v10/tiles/256/{z}/{x}/{y}?" +
@@ -125,7 +143,8 @@ function renderMap(quakes, legend, plates, volcs) {
     var overLay = { 
         'Quakes': quakes,
         'Plates': plates,
-        'Volcanoes': volcs
+        'Explosions': volcs,
+        'Water Stations': water
     };
 
     var myMap = L.map("map", {
