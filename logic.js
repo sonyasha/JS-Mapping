@@ -4,10 +4,6 @@ var volcanoesUrl = 'https://webservices.volcano.si.edu/geoserver/GVP-VOTW/ows?se
 var floodURL = 'https://waterwatch.usgs.gov/webservices/realtime?format=json';
 
 
-// d3.json(quakesUrl, function(quakedata) {
-//     getQuakes(quakedata);
-// });
-
 d3.json(quakesUrl, getQuakes);
 
 function getQuakes(data) {        
@@ -110,19 +106,34 @@ function getWater(quakes, legend, plates, volcanoes) {
     d3.json(floodURL, function(data) {
       console.log(data.sites[0].dec_lat_va);
       
-      var heatArray = data.sites.map(el => {
-        return [el.dec_lat_va, el.dec_long_va]
-      });
+        var heatArray = data.sites.map(el => {
+            return [el.dec_lat_va, el.dec_long_va]
+        });
       
-      var water = L.heatLayer(heatArray, {
+        var water = L.heatLayer(heatArray, {
         radius: 50,
         blur: 7
-      });
-      renderMap(quakes, legend, plates, volcanoes, water);
+        });
+        // renderMap(quakes, legend, plates, volcanoes, water);
+        getWaterCluster(quakes, legend, plates, volcanoes, water);
+    });
+}
+
+function getWaterCluster(quakes, legend, plates, volcanoes, water) {
+    d3.json(floodURL, function(data) {
+  
+        var waterclust = L.markerClusterGroup();
+  
+        data.sites.forEach(el => {
+            waterclust.addLayer(L.marker([el.dec_lat_va, el.dec_long_va])
+            .bindPopup("<h3>" + el.station_nm +  "</h3><p> Flow " + el.flow + "</p><hr><p>Class: "+
+            el.class + "</p>"))
+        });
+        renderMap(quakes, legend, plates, volcanoes, water, waterclust);
     });
   }
 
-function renderMap(quakes, legend, plates, volcs, water) {
+function renderMap(quakes, legend, plates, volcs, water, wcl) {
 
     var satellTiles = L.tileLayer(
         "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v10/tiles/256/{z}/{x}/{y}?" +
@@ -144,7 +155,8 @@ function renderMap(quakes, legend, plates, volcs, water) {
         'Quakes': quakes,
         'Plates': plates,
         'Explosions': volcs,
-        'Water Stations': water
+        'Water Stations': wcl,
+        'Water Stations Heat': water
     };
 
     var myMap = L.map("map", {
