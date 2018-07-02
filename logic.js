@@ -1,6 +1,7 @@
 var quakesUrl = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson';
 var platesUrl = 'https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json';
 var volcanoesUrl = 'https://webservices.volcano.si.edu/geoserver/GVP-VOTW/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GVP-VOTW:E3WebApp_Emissions&maxFeatures=100&outputFormat=application%2Fjson'
+var groundURL = 'pk.eyJ1IjoiZ3J5YXp6eiIsImEiOiJjamozbTc1eWYwY2xzM3Bwb2U4bWoxMHZ6In0.F5ZH2NiT-cdQwd1Wpkmhow'
 var floodURL = 'https://waterwatch.usgs.gov/webservices/realtime?format=json';
 
 
@@ -137,13 +138,13 @@ function renderMap(quakes, legend, plates, water, wcl) {
 
     var satellTiles = L.tileLayer(
         "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v10/tiles/256/{z}/{x}/{y}?" +
-          "access_token=" + token);
+          "access_token=" + groundURL);
     
     var regTiles = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/outdoors-v10/tiles/256/{z}/{x}/{y}?' +
-    "access_token=" + token);
+    "access_token=" + groundURL);
 
     var ligthTiles = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/light-v9/tiles/256/{z}/{x}/{y}?' +
-    "access_token=" + token)
+    "access_token=" + groundURL)
 
     var baseMaps = { 
         "Satellite": satellTiles,
