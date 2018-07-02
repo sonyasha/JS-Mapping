@@ -75,34 +75,31 @@ function getPlates(quakes,legend) {
           };
         }
       });
-    //   renderMap(quakes, legend, plates);
-    getVocanoes(quakes, legend, plates);
+    //   getVocanoes(quakes, legend, plates);
+    getWater(quakes, legend, plates);
     });
 };
 
-function getVocanoes(quakes, legend, plates) {
-    d3.json(volcanoesUrl, function(data) {
+// function getVocanoes(quakes, legend, plates) { //data server not working now for some reason
+//     d3.json(volcanoesUrl, function(data) {
   
-    var volcanoes = L.markerClusterGroup();
+//     var volcanoes = L.markerClusterGroup();
   
-    var volcLayer = L.geoJson(data, {
-        onEachFeature: function (feature, layer) {
-            layer.bindPopup("<h3>" + feature.properties.VolcanoName +  "</h3><p>Explotion " + feature.properties.SO2_Kilotons + " KiloTons</p><hr><p>Start Date: "+
-            feature.properties.StartDate + "</p><hr><p>End date: " + feature.properties.EndDate + "</p>");
-        }
-    });
+//     var volcLayer = L.geoJson(data, {
+//         onEachFeature: function (feature, layer) {
+//             layer.bindPopup("<h3>" + feature.properties.VolcanoName +  "</h3><p>Explotion " + feature.properties.SO2_Kilotons + " KiloTons</p><hr><p>Start Date: "+
+//             feature.properties.StartDate + "</p><hr><p>End date: " + feature.properties.EndDate + "</p>");
+//         }
+//     });
       
-    volcanoes.addLayer(volcLayer);
+//     volcanoes.addLayer(volcLayer);
 
-    // renderMap(quakes, legend, plates, volcanoes);
+//     getWater(quakes, legend, plates, volcanoes);
+//     });  
+// }
 
-    //   myMap.addLayer(volcanoes);
-    // myMap.fitBounds(volcanoes.getBounds());
-    getWater(quakes, legend, plates, volcanoes);
-    });  
-}
-
-function getWater(quakes, legend, plates, volcanoes) {
+// function getWater(quakes, legend, plates, volcanoes) {
+function getWater(quakes, legend, plates) {
     d3.json(floodURL, function(data) {
       console.log(data.sites[0].dec_lat_va);
       
@@ -114,12 +111,13 @@ function getWater(quakes, legend, plates, volcanoes) {
         radius: 50,
         blur: 7
         });
-        // renderMap(quakes, legend, plates, volcanoes, water);
-        getWaterCluster(quakes, legend, plates, volcanoes, water);
+        // getWaterCluster(quakes, legend, plates, volcanoes, water);
+        getWaterCluster(quakes, legend, plates, water);
     });
 }
 
-function getWaterCluster(quakes, legend, plates, volcanoes, water) {
+// function getWaterCluster(quakes, legend, plates, volcanoes, water) {
+function getWaterCluster(quakes, legend, plates, water) {
     d3.json(floodURL, function(data) {
   
         var waterclust = L.markerClusterGroup();
@@ -129,11 +127,13 @@ function getWaterCluster(quakes, legend, plates, volcanoes, water) {
             .bindPopup("<h3>" + el.station_nm +  "</h3><p> Flow " + el.flow + "</p><hr><p>Class: "+
             el.class + "</p>"))
         });
-        renderMap(quakes, legend, plates, volcanoes, water, waterclust);
+        // renderMap(quakes, legend, plates, volcanoes, water, waterclust);
+        renderMap(quakes, legend, plates, water, waterclust);
     });
   }
 
-function renderMap(quakes, legend, plates, volcs, water, wcl) {
+// function renderMap(quakes, legend, plates, volcs, water, wcl) {
+function renderMap(quakes, legend, plates, water, wcl) {
 
     var satellTiles = L.tileLayer(
         "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v10/tiles/256/{z}/{x}/{y}?" +
@@ -154,7 +154,7 @@ function renderMap(quakes, legend, plates, volcs, water, wcl) {
     var overLay = { 
         'Quakes': quakes,
         'Plates': plates,
-        'Explosions': volcs,
+        // 'Explosions': volcs,
         'Water Stations': wcl,
         'Water Stations Heat': water
     };
