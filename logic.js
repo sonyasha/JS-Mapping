@@ -1,8 +1,12 @@
-var quakesUrl = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson';
-var platesUrl = 'https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json';
-var volcanoesUrl = 'https://webservices.volcano.si.edu/geoserver/GVP-VOTW/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GVP-VOTW:E3WebApp_Emissions&maxFeatures=100&outputFormat=application%2Fjson'
-var groundURL = 'pk.eyJ1IjoiZ3J5YXp6eiIsImEiOiJjamozbTc1eWYwY2xzM3Bwb2U4bWoxMHZ6In0.F5ZH2NiT-cdQwd1Wpkmhow'
-var floodURL = 'https://waterwatch.usgs.gov/webservices/realtime?format=json';
+let quakesUrl = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson';
+let platesUrl = 'https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json';
+let volcanoesUrl = 'https://webservices.volcano.si.edu/geoserver/GVP-VOTW/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GVP-VOTW:E3WebApp_Emissions&maxFeatures=100&outputFormat=application%2Fjson'
+let groundURL = 'pk.eyJ1IjoiZ3J5YXp6eiIsImEiOiJjamozbTc1eWYwY2xzM3Bwb2U4bWoxMHZ6In0.F5ZH2NiT-cdQwd1Wpkmhow'
+let floodURL = 'https://waterwatch.usgs.gov/webservices/realtime?format=json';
+
+//a way to deal with CORB
+let floods = `${'https://cors-anywhere.herokuapp.com/'}${floodURL}`
+//let volcanoes = `${'https://cors-anywhere.herokuapp.com/'}${volcanoesUrl}`
 
 
 const render = () => {
@@ -16,15 +20,25 @@ const render = () => {
         .domain([0, 5])
         .range(["yellow", "red"]);
 
+    // let colors = colormap({
+    //     colormap: 'oxygen',
+    //     nshades: 6,
+    //     format: 'hex',
+    //     alpha: 1
+    // })
+
+    // console.log(colors)
+
     let quakesLegend = L.control({ position: "bottomright" });
     
     Promise.all([
         fetch(quakesUrl, {mode: 'cors'}).then(response => response.json()),
         fetch(platesUrl, {mode: 'cors'}).then(response => response.json()),
+        fetch(floods, {mode: 'cors'}).then(response => response.json()),
     ])
     .then(data => {
+        console.log(data);
         const all_data = data
-        console.log(all_data)
     
         const plates = L.geoJSON(all_data[1], {
             style: feature => {
@@ -35,7 +49,6 @@ const render = () => {
                 };
             }
         });
-        console.log(plates);
     
         const quakesData = L.geoJSON(all_data[0], {
     
@@ -52,7 +65,6 @@ const render = () => {
             },
             onEachFeature: onEachFeature
         });
-        console.log(quakesData);
 
         quakesLegend.onAdd = () => {
 
@@ -76,14 +88,31 @@ const render = () => {
             div.innerHTML += "<ul>" + labelsColors.join("") + "</ul>" + "<ul>" + labelsLabels.join("") + "</ul>";
             return div;
         };
+
+        let heatArray = all_data[2].sites.map(el => {
+            return [el.dec_lat_va, el.dec_long_va]
+        });
+        
+        let water = L.heatLayer(heatArray, {
+            radius: 50,
+            blur: 7
+            });
+        
+        let waterclust = L.markerClusterGroup();
+
+        all_data[2].sites.forEach(el => {
+            waterclust.addLayer(L.marker([el.dec_lat_va, el.dec_long_va])
+            .bindPopup("<h3>" + el.station_nm +  "</h3><p> Flow " + el.flow + "</p><hr><p>Class: "+
+            el.class + "</p>"))
+        });
     
-        renderMap(quakesData, quakesLegend, plates);
+        renderMap(quakesData, quakesLegend, plates, water, waterclust);
         
     })
 
 }
 
-const renderMap = (quakes, legend, plates) => {
+const renderMap = (quakes, legend, plates, water, wcl) => {
         let satellTiles = L.tileLayer(
             "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v10/tiles/256/{z}/{x}/{y}?" +
               "access_token=" + groundURL);
@@ -104,8 +133,8 @@ const renderMap = (quakes, legend, plates) => {
             'Quakes': quakes,
             'Plates': plates,
             // 'Explosions': volcs,
-            //'Water Stations': wcl,
-            //'Water Stations Heat': water
+            'Water Stations': wcl,
+            'Water Stations Heat': water
         };
     
         let myMap = L.map("map", {
@@ -246,17 +275,17 @@ const renderMap = (quakes, legend, plates) => {
 //     d3.json(floodURL, function(data) {
 //       console.log(data.sites[0].dec_lat_va);
       
-//         var heatArray = data.sites.map(el => {
-//             return [el.dec_lat_va, el.dec_long_va]
-//         });
+    //     var heatArray = data.sites.map(el => {
+    //         return [el.dec_lat_va, el.dec_long_va]
+    //     });
       
-//         var water = L.heatLayer(heatArray, {
-//         radius: 50,
-//         blur: 7
-//         });
-//         // getWaterCluster(quakes, legend, plates, volcanoes, water);
-//         getWaterCluster(quakes, legend, plates, water);
-//     });
+    //     var water = L.heatLayer(heatArray, {
+    //     radius: 50,
+    //     blur: 7
+    //     });
+    //     // getWaterCluster(quakes, legend, plates, volcanoes, water);
+    //     getWaterCluster(quakes, legend, plates, water);
+    // });
 // }
 
 // function getWaterCluster(quakes, legend, plates, volcanoes, water) {
